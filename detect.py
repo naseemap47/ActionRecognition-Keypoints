@@ -21,6 +21,17 @@ line_thickness = 4
 view_img = True
 save = False
 
+steps = 2
+radius = 5
+palette = np.array([[255, 128, 0], [255, 153, 51], [255, 178, 102],
+                    [230, 230, 0], [255, 153, 255], [153, 204, 255],
+                    [255, 102, 255], [255, 51, 255], [102, 178, 255],
+                    [51, 153, 255], [255, 153, 153], [255, 102, 102],
+                    [255, 51, 51], [153, 255, 153], [102, 255, 102],
+                    [51, 255, 51], [0, 255, 0], [0, 0, 255], [255, 0, 0],
+                    [255, 255, 255]])
+pose_kpt_color = palette[[16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9]]
+
 device = select_device(device)
 half = device.type != 'cpu'
 
@@ -44,7 +55,6 @@ else:
     if save:
         vid_write_image = letterbox(cap.read()[1], (frame_width), stride=64, auto=True)[0]
         resize_height, resize_width = vid_write_image.shape[:2]
-        out_video_name = f"{source.split('/')[-1].split('.')[0]}"
         out = cv2.VideoWriter(f"{source}_keypoint.mp4",
                             cv2.VideoWriter_fourcc(*'mp4v'), 30,
                             (resize_width, resize_height))
@@ -93,9 +103,25 @@ else:
                         c = int(cls)  # integer class
                         kpts = pose[det_index, 6:]
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                        plot_one_box_kpt(xyxy, im0, label=label, color=colors(c, True), 
-                                    line_thickness=line_thickness,kpt_label=True, kpts=kpts, steps=3, 
-                                    orig_shape=im0.shape[:2])
+                        # plot_one_box_kpt(xyxy, im0, label=label, color=colors(c, True), 
+                        #             line_thickness=line_thickness,kpt_label=True, kpts=kpts, steps=3, 
+                        #             orig_shape=im0.shape[:2])
+                        # print(kpts)
+
+                        # Pose Landmarks
+                        
+                        num_kpts = len(kpts) // steps
+                        for kid in range(num_kpts):
+                            # r, g, b = pose_kpt_color[kid]
+                            r, g, b = [0, 255, 255]
+                            x_coord, y_coord = kpts[steps * kid], kpts[steps * kid + 1]
+                            if not (x_coord % 640 == 0 or y_coord % 640 == 0):
+                                if steps == 3:
+                                    conf = kpts[steps * kid + 2]
+                                    if conf < 0.5:
+                                        continue
+                                cv2.circle(im0, (int(x_coord), int(y_coord)), radius, (int(r), int(g), int(b)), -1)
+                                cv2.putText(im0, f'{kid}', (int(x_coord), int(y_coord)), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 3)
             
             # Stream results
             if view_img:
