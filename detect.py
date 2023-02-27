@@ -108,8 +108,10 @@ else:
                         #             orig_shape=im0.shape[:2])
                         # print(kpts)
 
+                        # Object Bounding Box
+                        c1, c2 = (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3]))
+                        cv2.rectangle(im0, c1, c2, (0, 255, 0), 3)
                         # Pose Landmarks
-                        
                         num_kpts = len(kpts) // steps
                         for kid in range(num_kpts):
                             # r, g, b = pose_kpt_color[kid]
