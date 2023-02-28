@@ -9,7 +9,7 @@ from utils.datasets import letterbox
 from utils.torch_utils import select_device
 from models.experimental import attempt_load
 from utils.general import non_max_suppression_kpt,strip_optimizer,xyxy2xywh
-from utils.plots import output_to_keypoint, plot_skeleton_kpts,colors,plot_one_box_kpt
+from utils.plots import output_to_keypoint, plot_skeleton_kpts,colors,plot_one_box_kpt,plot_one_box
 
 
 device = '0'
@@ -23,8 +23,11 @@ save = False
 
 steps = 3
 radius = 5
+counter = 20
+degriment = False
+x_9, y_9, x_10, y_10 = 0, 0, 0, 0
 
-def plot_skeleton_kpts(im, kpts, steps=2, orig_shape=None):
+def plot_skeleton_kpts(im, kpts, steps=3, orig_shape=None):
     #Plot the skeleton and keypointsfor coco datatset
     palette = np.array([[255, 128, 0], [255, 153, 51], [255, 178, 102],
                         [230, 230, 0], [255, 153, 255], [153, 204, 255],
@@ -102,6 +105,8 @@ else:
         ret, frame = cap.read()
         
         if ret:
+            # frame_roi = frame[650:900, 30:350]
+            x_9, y_9, x_10, y_10 = 0, 0, 0, 0
             orig_image = frame
             image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
             image = letterbox(image, (frame_width), stride=64, auto=True)[0]
@@ -133,21 +138,18 @@ else:
             for i, pose in enumerate(output_data):  # detections per image
             
                 if len(output_data):  #check if no pose
-                    for c in pose[:, 5].unique(): # Print results
-                        n = (pose[:, 5] == c).sum()  # detections per class
-                        print("No of Objects in Current Frame : {}".format(n))
+                    # for c in pose[:, 5].unique(): # Print results
+                    #     n = (pose[:, 5] == c).sum()  # detections per class
+                    #     print("No of Objects in Current Frame : {}".format(n))
                     
                     for det_index, (*xyxy, conf, cls) in enumerate(reversed(pose[:,:6])): #loop over poses for drawing on frame
-                        c = int(cls)  # integer class
+                        # c = int(cls)  # integer class
                         kpts = pose[det_index, 6:]
-                        label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                        # plot_one_box_kpt(xyxy, im0, label=label, color=colors(c, True), 
-                        #             line_thickness=line_thickness,kpt_label=True, kpts=kpts, steps=3, 
-                        #             orig_shape=im0.shape[:2])
+                        # label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
 
                         # Object Bounding Box
                         c1, c2 = (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3]))
-                        cv2.rectangle(im0, c1, c2, (0, 255, 0), 3)
+                        cv2.rectangle(im0, c1, c2, (0, 255, 0), 2)
                         # Pose Landmarks
                         # plot_skeleton_kpts(im0, kpts, 3)
                         num_kpts = len(kpts) // steps
@@ -164,7 +166,30 @@ else:
                                     im0, f'{kid}', (int(x_coord), int(y_coord)), cv2.FONT_HERSHEY_PLAIN, 2,
                                     (0, 0, 255), 3
                                 )
+                                if kid == 9:
+                                    x_9, y_9 = int(x_coord), int(y_coord)
+                                if kid == 10:
+                                    x_10, y_10 = int(x_coord), int(y_coord)
+                                if x_9 > 0 and x_10 > 0:
+                                    if (30<x_9<350 and 650<y_9<900) or (30<x_10<350 and 650<y_10<900):
+                                        # degriment = True
+                                        counter -= 1
+
             
+            # Degrement
+            # if degriment:
+            #     counter -= 1
+            #     degriment = False
+
+            if counter > 8:
+                plot_one_box([30, 650, 350, 900], im0, (0,250,0), f'Count: {counter}', 3)
+            else:
+                plot_one_box([30, 650, 350, 900], im0, (0,0,250), f'Count: {counter}', 3)
+
+            # cv2.rectangle(
+            #     im0,  (30, 650), (350, 900), (255, 255, 0), 3
+            # )
+
             # Stream results
             if view_img:
                 cv2.imshow("YOLOv7 Pose Estimation Demo", im0)
