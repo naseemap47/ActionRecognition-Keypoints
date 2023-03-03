@@ -19,7 +19,7 @@ hide_labels = False
 hide_conf = False
 line_thickness = 4
 view_img = True
-save = False
+save = True
 
 steps = 3
 radius = 5
@@ -44,7 +44,7 @@ def plot_skeleton_kpts(im, kpts, steps=3, orig_shape=None):
 
     pose_limb_color = palette[[9, 9, 9, 9, 7, 7, 7, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 16]]
     pose_kpt_color = palette[[16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9]]
-    print(len(palette))
+    # print(len(palette))
     radius = 5
     num_kpts = len(kpts) // steps
 
@@ -93,12 +93,14 @@ if (cap.isOpened() == False):   #check if videocapture not opened
 else:
 
     frame_width = int(cap.get(3))
-    frame_height = int(cap.get(4))        
+    frame_height = int(cap.get(4))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
     if save:
         vid_write_image = letterbox(cap.read()[1], (frame_width), stride=64, auto=True)[0]
         resize_height, resize_width = vid_write_image.shape[:2]
         out = cv2.VideoWriter(f"{source}_keypoint.mp4",
-                            cv2.VideoWriter_fourcc(*'mp4v'), 30,
+                            cv2.VideoWriter_fourcc(*'mp4v'), fps,
                             (resize_width, resize_height))
 
     while(cap.isOpened):
@@ -122,7 +124,7 @@ else:
                 output_data, _ = model(image)
 
             output_data = non_max_suppression_kpt(output_data,
-                                        0.25,   # Conf. Threshold.
+                                        0.6,   # Conf. Threshold.
                                         0.65, # IoU Threshold.
                                         nc=model.yaml['nc'], # Number of classes.
                                         nkpt=model.yaml['nkpt'], # Number of keypoints.
@@ -177,7 +179,7 @@ else:
                                     if kid == 10:
                                         x_10, y_10 = int(x_coord), int(y_coord)
                                     if x_9 > 0 and x_10 > 0:
-                                        if (0<x_9<1100 and 0<y_9<900) or (0<x_10<1100 and 0<y_10<900):
+                                        if (0<x_9<1200 and 0<y_9<900) or (0<x_10<1200 and 0<y_10<900):
                                             degriment = True
                                         else:
                                             next_cycle = True
@@ -191,9 +193,9 @@ else:
                     next_cycle = False
 
             if counter > 8:
-                plot_one_box([0, 0, 1100, 900], im0, (0,250,0), f'Count: {counter}', 3)
+                plot_one_box([0, 0, 1200, 900], im0, (0,250,0), f'Count: {counter}', 3)
             else:
-                plot_one_box([0, 0, 1100, 900], im0, (0,0,250), f'Count: {counter}', 3)
+                plot_one_box([0, 0, 1200, 900], im0, (0,0,250), f'Count: {counter}', 3)
 
             cv2.putText(im0, f'Counter: {counter}', (60, 50), cv2.FONT_HERSHEY_PLAIN, 4, (0, 0, 255), 5)
 
@@ -201,6 +203,10 @@ else:
             #     im0,  (30, 550), (650, 960), (255, 255, 0), 3
             # )
 
+            if save:
+                im0 = cv2.resize(im0, (resize_width, resize_height))
+                out.write(im0)
+            
             # Stream results
             if view_img:
                 im0 = cv2.resize(im0, (640, 480))
@@ -209,8 +215,6 @@ else:
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
             
-            if save:
-                out.write(im0)
 
         else:
             break
