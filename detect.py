@@ -14,7 +14,7 @@ from utils.plots import output_to_keypoint, plot_skeleton_kpts,colors,plot_one_b
 
 device = '0'
 poseweights = 'yolov7-w6-pose.pt'
-source = 'videos/test.mp4'
+source = 'videos/test2.mp4'
 hide_labels = False
 hide_conf = False
 line_thickness = 4
@@ -124,7 +124,7 @@ else:
                 output_data, _ = model(image)
 
             output_data = non_max_suppression_kpt(output_data,
-                                        0.6,   # Conf. Threshold.
+                                        0.7,   # Conf. Threshold.
                                         0.65, # IoU Threshold.
                                         nc=model.yaml['nc'], # Number of classes.
                                         nkpt=model.yaml['nkpt'], # Number of keypoints.
